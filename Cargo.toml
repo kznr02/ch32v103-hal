@@ -1,0 +1,12 @@
+[package]
+name = "ch32v103-hal"
+version = "0.1.0"
+authors = ["kznr"]
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+ch32v1 = { version = "*", features = ["critical-section", "ch32v103"] }
+embedded-hal = { version = "*", features = ["unproven"] }
+riscv = { version = "*" }
