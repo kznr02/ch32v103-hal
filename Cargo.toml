@@ -1,8 +1,18 @@
 [package]
 name = "ch32v103-hal"
-version = "0.1.0"
-authors = ["kznr"]
+version = "0.0.1"
+authors = ["kznr <clyde0203hy@outlook.com>"]
+description = "WCH CH32v103 MCU HAL"
 edition = "2021"
+categories = [
+    "embedded",
+    "no-std",
+    "ch32",
+    "embedded-hal"
+]
+license = "MIT"
+exclude = ["gitignore"]
+repository = "https://github.com/kznr02/ch32v103-hal"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
