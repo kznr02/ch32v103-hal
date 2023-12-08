@@ -17,6 +17,6 @@ repository = "https://github.com/kznr02/ch32v103-hal"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-ch32v1 = { version = "*", features = ["critical-section", "ch32v103"] }
-embedded-hal = { version = "*", features = ["unproven"] }
-riscv = { version = "*" }
+ch32v1 = { version = "0.1.6", features = ["critical-section", "ch32v103"] }
+embedded-hal = { version = "0.2.7", features = ["unproven"] }
+riscv = { version = "0.10.1" }
