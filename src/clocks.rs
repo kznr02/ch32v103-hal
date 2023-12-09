@@ -59,6 +59,12 @@ pub enum PllMul {
     Mul16 = 0b1110,
 }
 
+impl PllMul {
+    pub fn val(&self) -> u32 {
+        *self as u32 + 2
+    }
+}
+
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum AHBPreDiv {
     NoDiv = 0b0000,
@@ -114,7 +120,6 @@ pub struct Clocks {
     pub input_src: InputSrc,
     pub sysclk_state: InputSrc,
     pub pllmul: PllMul,
-    pub pllm: u32,
     pub ahb_prediv: AHBPreDiv,
     pub apb1_prediv: APB1PreDiv,
     pub apb2_prediv: APB2PreDiv,
@@ -131,7 +136,16 @@ impl Clocks {
 
         let rcc = unsafe { &(*(RCC::ptr())) };
 
-        // let flash = unsafe { &(*(FLASH::ptr())) };
+        let flash = unsafe { &(*(FLASH::ptr())) };
+
+        flash.actlr.modify(|_, w| {
+            w.prftbe().bit(true);
+            if self.sysclk() < 48_000_000 {
+                w.latency().one()
+            } else {
+                w.latency().two()
+            }
+        });
 
         // let sysclk = self.sysclk();
 
@@ -185,17 +199,6 @@ impl Clocks {
             });
 
             rcc.ctlr.modify(|_, w| w.csson().bit(self.css));
-
-            match self.input_src {
-                InputSrc::Hsi => (),
-                InputSrc::Pll(src) => match src {
-                    PllSrc::Hsi => (),
-                    _ => rcc.ctlr.modify(|_, w| w.hsion().clear_bit()),
-                },
-                _ => rcc.ctlr.modify(|_, w| w.hsion().clear_bit()),
-            }
-
-            rcc_en_reset!(apb2, iopa, rcc);
         });
         Ok(())
     }
@@ -203,11 +206,11 @@ impl Clocks {
     pub fn sysclk(&self) -> u32 {
         match self.input_src {
             InputSrc::Hsi => 8_000_000,
-            InputSrc::Hse(f) => f as u32,
+            InputSrc::Hse(f) => f as u32 * 1_000_000,
             InputSrc::Pll(src) => match src {
-                PllSrc::Hse(v) => v * self.pllm,
-                PllSrc::HseDiv2(v) => v / 2 * self.pllm,
-                PllSrc::Hsi => 8_000_000 * self.pllm,
+                PllSrc::Hse(v) => v * self.pllmul.val(),
+                PllSrc::HseDiv2(v) => v / 2 * self.pllmul.val(),
+                PllSrc::Hsi => 8_000_000 * self.pllmul.val(),
             },
             InputSrc::Unavailable => 0,
         }
@@ -274,7 +277,6 @@ impl Default for Clocks {
             input_src: InputSrc::Hsi,
             sysclk_state: InputSrc::Hsi,
             pllmul: PllMul::Mul2,
-            pllm: 2,
             ahb_prediv: AHBPreDiv::NoDiv,
             apb1_prediv: APB1PreDiv::NoDiv,
             apb2_prediv: APB2PreDiv::NoDiv,
