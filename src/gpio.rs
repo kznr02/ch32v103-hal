@@ -1,5 +1,6 @@
 use ch32v1::ch32v103 as pac;
 use core::convert::Infallible;
+use embedded_hal::digital::v2::{InputPin, OutputPin, ToggleableOutputPin, StatefulOutputPin};
 use riscv::interrupt::free;
 
 /// choose which group of GPIO you want to use
@@ -15,19 +16,20 @@ pub enum Port {
 }
 
 /// Mode of a GPIO pin, it's GPIOx_CFGxR register value
-#[derive(Debug, Clone, Copy)]
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PinMode {
     Input = 0b00,
     Output,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum OutputType {
     PushPull,
     OpenDrain,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum OutputSpeed {
     /// GPIO 2Mhz speed
     LowSpeed = 1,
@@ -37,19 +39,19 @@ pub enum OutputSpeed {
     HighSpeed,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Pull {
     PullUp,
     PullDown,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CfgLock {
     Unlock,
     Lock,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PinState {
     Low,
     High,
@@ -218,8 +220,88 @@ impl Pin {
             PinState::High => reg.bshr.write(|w| unsafe { w.bits(0x01 << self.pin) }),
         })
     }
+
+    pub fn is_high(&self) -> bool {
+        let reg = unsafe { &(*(self.regs())) };
+        free(|| {
+            let state = (reg.indr.read().bits() & !(0x01 << self.pin)) >> self.pin;
+            if state == 0 {
+                false
+            } else {
+                true
+            }
+        })
+    }
+
+    pub fn is_low(&self) -> bool {
+        !self.is_high()
+    }
+
+    pub fn set_high(&self) {
+        self.set_state(PinState::High);
+    }
+
+    pub fn set_low(&self) {
+        self.set_state(PinState::Low);
+    }
+
+    pub fn toggle(&self) {
+        if self.is_high() {
+            self.set_low();
+        } else {
+            self.set_high();
+        }
+    }
 }
 
+impl InputPin for Pin {
+    type Error = Infallible;
+
+    fn is_high(&self) -> Result<bool, Self::Error> {
+        Ok(self.is_high())
+    }
+
+    fn is_low(&self) -> Result<bool, Self::Error> {
+        Ok(self.is_low())
+    }
+}
+
+impl OutputPin for Pin {
+    type Error = Infallible;
+
+    fn set_high(&mut self) -> Result<(), Self::Error> {
+        Ok(Pin::set_high(&self))
+    }
+
+    fn set_low(&mut self) -> Result<(), Self::Error> {
+        Ok(Pin::set_low(&self))
+    }
+
+    fn set_state(&mut self, state: embedded_hal::digital::v2::PinState) -> Result<(), Self::Error> {
+        match state {
+            embedded_hal::digital::v2::PinState::High => Ok(Pin::set_state(&self, PinState::High)),
+            embedded_hal::digital::v2::PinState::Low => Ok(Pin::set_state(&self, PinState::Low)),
+        }
+    }
+}
+
+impl ToggleableOutputPin for Pin {
+    type Error = Infallible;
+
+    fn toggle(&mut self) -> Result<(), Self::Error> {
+        Ok(Pin::toggle(&self))
+    }
+}
+
+impl StatefulOutputPin for Pin {
+    fn is_set_high(&self) -> Result<bool, Self::Error> {
+        Ok(Pin::is_high(&self))
+    }
+
+    fn is_set_low(&self) -> Result<bool, Self::Error> {
+        Ok(Pin::is_low(&self))
+    }
+}
 const fn _regs(port: &Port) -> *const pac::gpioa::RegisterBlock {
     match port {
         Port::GPIOA => pac::GPIOA::ptr(),
