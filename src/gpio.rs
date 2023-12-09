@@ -1,6 +1,6 @@
 use ch32v1::ch32v103 as pac;
 use core::convert::Infallible;
-use embedded_hal::digital::v2::{InputPin, OutputPin, ToggleableOutputPin, StatefulOutputPin};
+use embedded_hal::digital::v2::{InputPin, OutputPin, StatefulOutputPin, ToggleableOutputPin};
 use riscv::interrupt::free;
 
 /// choose which group of GPIO you want to use
@@ -194,7 +194,7 @@ impl Pin {
 
         free(|| {
             if reg.lckr.read().lckk().is_unlocked() {
-                reg.lckr.write(|w| w.lckk().locked())
+                reg.lckr.modify(|_, w| w.lckk().locked())
             }
         })
     }
@@ -224,7 +224,7 @@ impl Pin {
     pub fn is_high(&self) -> bool {
         let reg = unsafe { &(*(self.regs())) };
         free(|| {
-            let state = (reg.indr.read().bits() & !(0x01 << self.pin)) >> self.pin;
+            let state = (reg.indr.read().bits() & (0x01 << self.pin)) >> self.pin;
             if state == 0 {
                 false
             } else {
@@ -258,11 +258,11 @@ impl InputPin for Pin {
     type Error = Infallible;
 
     fn is_high(&self) -> Result<bool, Self::Error> {
-        Ok(self.is_high())
+        Ok(Pin::is_high(&self))
     }
 
     fn is_low(&self) -> Result<bool, Self::Error> {
-        Ok(self.is_low())
+        Ok(Pin::is_low(&self))
     }
 }
 
