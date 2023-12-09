@@ -7,6 +7,7 @@ This project is attend to implement hal in rust on wch-ch32 microcontroller, now
 Now work well:
 
 - [x] GPIO
+- [x] RCC
 
 <!-- ## Usage
 
