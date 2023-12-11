@@ -1,8 +1,6 @@
 use ch32v1::ch32v103::{FLASH, RCC};
 use riscv::interrupt::free;
 
-use crate::utils::rcc_en_reset;
-
 const MAX_CLK_FREQ: u32 = 72_000_000;
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
