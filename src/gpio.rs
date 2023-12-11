@@ -1,4 +1,4 @@
-use ch32v1::ch32v103 as pac;
+use ch32v1::ch32v103::{self as pac, AFIO};
 use core::convert::Infallible;
 use embedded_hal::digital::v2::{InputPin, OutputPin, StatefulOutputPin, ToggleableOutputPin};
 use riscv::interrupt::free;
@@ -6,13 +6,13 @@ use riscv::interrupt::free;
 /// choose which group of GPIO you want to use
 pub enum Port {
     /// GPIOA group, will effect GPIOA_xxxR register
-    GPIOA,
+    GPIOA = 0b0000,
     /// GPIOB group, will effect GPIOB_xxxR register
-    GPIOB,
+    GPIOB = 0b0001,
     /// GPIOC group, will effect GPIOC_xxxR register
-    GPIOC,
+    GPIOC = 0b0010,
     /// GPIOD group, will effect GPIOD_xxxR register
-    GPIOD,
+    GPIOD = 0b0011,
 }
 
 /// Mode of a GPIO pin, it's GPIOx_CFGxR register value
@@ -49,6 +49,11 @@ pub enum Pull {
 pub enum CfgLock {
     Unlock,
     Lock,
+}
+
+pub enum Interrupt {
+    Disable,
+    Enable,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -196,7 +201,12 @@ impl Pin {
             if reg.lckr.read().lckk().is_unlocked() {
                 reg.lckr.modify(|_, w| w.lckk().locked())
             }
+            todo!()
         })
+    }
+
+    pub fn interrupt(&self, val: Interrupt) {
+        todo!()
     }
 
     pub fn get_state(&self) -> PinState {
