@@ -1,6 +1,6 @@
 [package]
 name = "ch32v103-hal"
-version = "0.0.2"
+version = "0.0.3"
 authors = ["kznr <clyde0203hy@outlook.com>"]
 description = "WCH CH32v103 MCU HAL"
 edition = "2021"
