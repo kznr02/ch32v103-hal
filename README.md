@@ -8,6 +8,7 @@ Now work well:
 
 - [x] GPIO
 - [x] RCC
+- [x] AFIO
 
 <!-- ## Usage
 
