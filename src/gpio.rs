@@ -1,18 +1,23 @@
-use ch32v1::ch32v103::{self as pac, AFIO};
+use ch32v1::ch32v103::{
+    self as pac,
+    afio::{self, RegisterBlock},
+    AFIO, EXTI,
+};
 use core::convert::Infallible;
 use embedded_hal::digital::v2::{InputPin, OutputPin, StatefulOutputPin, ToggleableOutputPin};
 use riscv::interrupt::free;
 
 /// choose which group of GPIO you want to use
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Port {
     /// GPIOA group, will effect GPIOA_xxxR register
-    GPIOA = 0b0000,
+    GPIOA = 0x00,
     /// GPIOB group, will effect GPIOB_xxxR register
-    GPIOB = 0b0001,
+    GPIOB = 0x01,
     /// GPIOC group, will effect GPIOC_xxxR register
-    GPIOC = 0b0010,
+    GPIOC = 0x02,
     /// GPIOD group, will effect GPIOD_xxxR register
-    GPIOD = 0b0011,
+    GPIOD = 0x03,
 }
 
 /// Mode of a GPIO pin, it's GPIOx_CFGxR register value
@@ -51,9 +56,11 @@ pub enum CfgLock {
     Lock,
 }
 
-pub enum Interrupt {
-    Disable,
-    Enable,
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum IntTrigger {
+    Rising = 0b01,
+    Falling = 0b10,
+    RisingFalling = 0b11,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -205,8 +212,55 @@ impl Pin {
         })
     }
 
-    pub fn interrupt(&self, val: Interrupt) {
-        todo!()
+    pub fn enable_int(&self, trigger: IntTrigger) {
+        let afio = unsafe { &(*AFIO::ptr()) };
+        let offset = (self.pin & 0x03) * 4;
+        let exti = unsafe { &(*(EXTI::ptr())) };
+
+        free(|| {
+            // Set AFIO EXTICRx to enable gpio exti line
+            if self.pin <= 3 {
+                afio.exticr1
+                    .modify(|_, w| unsafe { w.bits((self.port as u32) << offset) })
+            } else if self.pin <= 7 {
+                afio.exticr2
+                    .modify(|_, w| unsafe { w.bits((self.port as u32) << offset) })
+            } else if self.pin <= 11 {
+                afio.exticr3
+                    .modify(|_, w| unsafe { w.bits((self.port as u32) << offset) })
+            } else if self.pin <= 15 {
+                afio.exticr4
+                    .modify(|_, w| unsafe { w.bits((self.port as u32) << offset) })
+            }
+
+            // enable exti for pinX
+            exti.intenr
+                .modify(|_, w| unsafe { w.bits(0x01 << self.pin) });
+            // enable interrupt event for pinX
+            exti.evenr
+                .modify(|_, w| unsafe { w.bits(0x01 << self.pin) });
+            // set rising trigger
+            exti.rtenr
+                .modify(|_, w| unsafe { w.bits((trigger as u32 & 0x01) << self.pin) });
+            // set falling trigger
+            exti.ftenr
+                .modify(|_, w| unsafe { w.bits((trigger as u32 >> 1) << self.pin) });
+        })
+    }
+
+    pub fn disable_int(&self) {
+        let exti = unsafe { &(*(EXTI::ptr())) };
+
+        free(|| {
+            // enable exti for pinX
+            exti.intenr.modify(|_, w| unsafe { w.bits(0 << self.pin) });
+            // enable interrupt event for pinX
+            exti.evenr.modify(|_, w| unsafe { w.bits(0 << self.pin) });
+            // set rising trigger
+            exti.rtenr.modify(|_, w| unsafe { w.bits(0 << self.pin) });
+            // set falling trigger
+            exti.ftenr.modify(|_, w| unsafe { w.bits(0 << self.pin) });
+        })
     }
 
     pub fn get_state(&self) -> PinState {
