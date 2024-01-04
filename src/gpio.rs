@@ -1,7 +1,4 @@
-use ch32v1::ch32v103::{
-    self as pac,
-    AFIO, EXTI,
-};
+use ch32v1::ch32v103::{self as pac, AFIO, EXTI};
 use core::convert::Infallible;
 use embedded_hal::digital::v2::{InputPin, OutputPin, StatefulOutputPin, ToggleableOutputPin};
 use riscv::interrupt::free;
