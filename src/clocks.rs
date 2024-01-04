@@ -206,8 +206,8 @@ impl Clocks {
             InputSrc::Hsi => 8_000_000,
             InputSrc::Hse(f) => f as u32 * 1_000_000,
             InputSrc::Pll(src) => match src {
-                PllSrc::Hse(v) => v * self.pllmul.val(),
-                PllSrc::HseDiv2(v) => v / 2 * self.pllmul.val(),
+                PllSrc::Hse(v) => v * self.pllmul.val() * 1_000_000,
+                PllSrc::HseDiv2(v) => v / 2 * self.pllmul.val() * 1_000_000,
                 PllSrc::Hsi => 8_000_000 * self.pllmul.val(),
             },
             InputSrc::Unavailable => 0,
