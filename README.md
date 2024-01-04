@@ -9,6 +9,7 @@ Now work well:
 - [x] GPIO
 - [x] RCC
 - [x] AFIO
+- [x] Delay
 
 <!-- ## Usage
 
