@@ -1,6 +1,5 @@
 use ch32v1::ch32v103::{
     self as pac,
-    afio::{self, RegisterBlock},
     AFIO, EXTI,
 };
 use core::convert::Infallible;
